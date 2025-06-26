@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Preload, useGLTF } from "@react-three/drei";
+
 import CanvasLoader from "../Loader";
 
 const Computers = ({ isMobile }) => {
@@ -20,6 +21,7 @@ const Computers = ({ isMobile }) => {
       <pointLight intensity={1} />
       <primitive
         object={computer.scene}
+        // Move model lower so it's just under the text
         scale={isMobile ? 0.18 : 0.22}
         position={isMobile ? [0, -1.4, 0] : [0, -1.5, 0]}
         rotation={[0, 0, 0]}
@@ -30,16 +32,14 @@ const Computers = ({ isMobile }) => {
 
 const ComputersCanvas = () => {
   const [isMobile, setIsMobile] = useState(undefined);
-  const [controlsEnabled, setControlsEnabled] = useState(false);
+  const [mobileControlsEnabled, setMobileControlsEnabled] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 500px)");
     setIsMobile(mediaQuery.matches);
-    setControlsEnabled(!mediaQuery.matches); // default: enabled for desktop, off for mobile
 
     const handleMediaQueryChange = (event) => {
       setIsMobile(event.matches);
-      setControlsEnabled(!event.matches); // update toggle based on device
     };
 
     mediaQuery.addEventListener("change", handleMediaQueryChange);
@@ -49,6 +49,7 @@ const ComputersCanvas = () => {
     };
   }, []);
 
+  // Only render Canvas after isMobile is determined
   if (isMobile === undefined) return null;
 
   return (
@@ -58,23 +59,23 @@ const ComputersCanvas = () => {
         <button
           style={{
             position: "absolute",
+            zIndex: 10,
             top: 10,
             right: 10,
-            zIndex: 10,
             padding: "8px 12px",
-            fontSize: "14px",
             borderRadius: "6px",
             border: "none",
-            backgroundColor: "#000",
+            background: "#222",
             color: "#fff",
             cursor: "pointer",
+            fontSize: "0.95rem",
+            opacity: 0.85,
           }}
-          onClick={() => setControlsEnabled((prev) => !prev)}
+          onClick={() => setMobileControlsEnabled((v) => !v)}
         >
-          {controlsEnabled ? "Disable Rotate" : "Enable Rotate"}
+          {mobileControlsEnabled ? "Disable Rotation" : "Enable Rotation"}
         </button>
       )}
-
       <Canvas
         frameloop="demand"
         shadows
@@ -85,11 +86,15 @@ const ComputersCanvas = () => {
         <Suspense fallback={<CanvasLoader />}>
           <OrbitControls
             enableZoom={false}
-            enabled={controlsEnabled}
+            // Allow vertical dragging (up/down)
             minPolarAngle={0}
             maxPolarAngle={Math.PI}
+            // Always start facing straight
             target={[0, 0, 0]}
+            defaultPolarAngle={0}
+            defaultAzimuthAngle={0}
             makeDefault
+            enabled={!isMobile ? true : mobileControlsEnabled}
           />
           <Computers isMobile={isMobile} />
         </Suspense>
@@ -100,3 +105,4 @@ const ComputersCanvas = () => {
 };
 
 export default ComputersCanvas;
+
